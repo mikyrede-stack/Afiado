@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meta do Tesla</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f1fa; --panel:#ffffff; --ink:#1c1840; --muted:#6b6790;
+  --line:#dcd8ee; --accent:#ff5d73; --accent-ink:#ffffff; --bar:#7c5cff; --bar-bg:#e4e0f5;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#15122e; --panel:#1f1b42; --ink:#f1efff; --muted:#a29dcc;
+    --line:#342f63; --accent:#ff6f84; --accent-ink:#1c1840; --bar:#9b82ff; --bar-bg:#2c2756;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#15122e; --panel:#1f1b42; --ink:#f1efff; --muted:#a29dcc;
+  --line:#342f63; --accent:#ff6f84; --accent-ink:#1c1840; --bar:#9b82ff; --bar-bg:#2c2756;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.4}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.35rem;font-weight:800;margin:4px 0 14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.stat.big{grid-column:1 / -1}
+.stat span{display:block;color:var(--muted);font-size:.85rem}
+.stat b{display:block;font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.stat.big b{font-size:2.6rem}
+.bar{height:12px;background:var(--bar-bg);border-radius:99px;overflow:hidden;margin:12px 0 4px}
+.bar i{display:block;height:100%;width:0;background:var(--bar);border-radius:99px;transition:width .35s}
+.small{color:var(--muted);font-size:.85rem}
+h2{font-size:1.05rem;margin:24px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.grid button{padding:14px 0;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:800;font-size:1.05rem;cursor:pointer}
+.grid button:active{transform:scale(.94)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--bar);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row button,.row input{font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:11px 14px}
+.row input{flex:1;min-width:120px}
+.row button{cursor:pointer;font-weight:700}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--line)}
+li em{font-style:normal;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Meta do Tesla: 350.000 moedas</h1>
+
+  <section class="stats" aria-live="polite">
+    <div class="stat big"><span>Moedas que você tem</span><b id="coins">0</b>
+      <div class="bar"><i id="fill"></i></div>
+      <div class="small" id="pct"></div>
+    </div>
+    <div class="stat"><span>Pessoas que você já matou</span><b id="killed">0</b></div>
+    <div class="stat"><span>Pessoas que faltam matar</span><b id="left">0</b></div>
+    <div class="stat"><span>Moedas que faltam</span><b id="missing">0</b></div>
+    <div class="stat"><span>Dias a 10 mil por dia</span><b id="days">0</b></div>
+  </section>
+
+  <h2>Quanto você ganhou agora?</h2>
+  <div class="grid" id="buttons"></div>
+  <div class="row">
+    <button id="undo">Desfazer o último</button>
+  </div>
+
+  <h2>Corrigir o total de moedas</h2>
+  <div class="row">
+    <input id="set" type="number" inputmode="numeric" placeholder="Total certo no jogo">
+    <button id="save">Salvar total</button>
+  </div>
+
+  <h2>Últimos ganhos</h2>
+  <ul id="hist"></ul>
+  <p class="small" id="empty">Nenhum ganho ainda. Toque num botão acima.</p>
+</main>
+
+<script>
+var GOAL=350000, BASE=20000, PER_KILL=15, KEY="tesla-contador-v1";
+var state={coins:23500,hist:[]};
+try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(p&&typeof p.coins==="number"){state=p;if(!Array.isArray(state.hist))state.hist=[];}}}catch(e){}
+
+function fmt(n){return Math.max(0,Math.round(n)).toLocaleString("pt-BR");}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+function render(){
+  var c=state.coins, miss=Math.max(0,GOAL-c);
+  document.getElementById("coins").textContent=fmt(c);
+  document.getElementById("killed").textContent=fmt((c-BASE)/PER_KILL);
+  document.getElementById("left").textContent=fmt(miss/PER_KILL);
+  document.getElementById("missing").textContent=fmt(miss);
+  document.getElementById("days").textContent=fmt(Math.ceil(miss/10000));
+  var pct=Math.min(100,c/GOAL*100);
+  document.getElementById("fill").style.width=pct+"%";
+  document.getElementById("pct").textContent=miss===0?"Meta batida! Pode comprar o Tesla.":pct.toFixed(1).replace(".",",")+"% da meta";
+  var ul=document.getElementById("hist");ul.innerHTML="";
+  state.hist.slice(-8).reverse().forEach(function(h){
+    var li=document.createElement("li");
+    li.innerHTML="<span>+"+fmt(h.v)+" moedas</span><em>"+fmt(h.v/PER_KILL)+" mortes</em>";
+    ul.appendChild(li);
+  });
+  document.getElementById("empty").style.display=state.hist.length?"none":"block";
+}
+
+var box=document.getElementById("buttons");
+for(var i=1;i<=10;i++){(function(k){
+  var b=document.createElement("button");b.textContent=k+"k";
+  b.setAttribute("aria-label","Somar "+k+" mil moedas");
+  b.onclick=function(){state.coins+=k*1000;state.hist.push({v:k*1000});save();render();};
+  box.appendChild(b);
+})(i);}
+
+document.getElementById("undo").onclick=function(){
+  var h=state.hist.pop();if(h){state.coins-=h.v;save();render();}
+};
+document.getElementById("save").onclick=function(){
+  var v=parseInt(document.getElementById("set").value,10);
+  if(!isNaN(v)&&v>=0){state.coins=v;state.hist=[];save();render();document.getElementById("set").value="";}
+};
+render();
+</script>
+</body>
+</html>
